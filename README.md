@@ -94,8 +94,7 @@ ruby passman.rb
 
 ### windows (native installation or wsl)
 
-native windows installation:
-download and install ruby from rubyinstaller.org.
+download and install ruby from rubyinstaller.org
 
 install dependencies:
 
