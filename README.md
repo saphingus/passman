@@ -48,7 +48,7 @@ cd passman
 install required ruby gems:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 ### 4. run passman
@@ -73,7 +73,7 @@ sudo dnf install ruby           # for fedora
 
 install dependencies:
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -94,7 +94,7 @@ brew install ruby
 ### install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -110,7 +110,7 @@ download and install ruby from rubyinstaller.org
 install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -128,7 +128,7 @@ sudo apt-get install ruby
 install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -136,17 +136,6 @@ run passman:
 ```bash
 ruby passman.rb
 ```
-
-### usage
-after launching the program, you will be prompted to enter your master password, once authenticated, you can use the following options:
-
-- add a new password
-
-- search for a saved password
-
-- delete a password entry
-
-- generate a random salt
 
 ### contributing
 passman is open-source, and contributions are welcome, please fork the repository, create a new branch, and submit a pull request
