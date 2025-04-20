@@ -137,11 +137,11 @@ run passman:
 ruby passman.rb
 ```
 
-### contributing
+## contributing
 passman is open-source, and contributions are welcome, please fork the repository, create a new branch, and submit a pull request
 
-### license
+## license
 this project is licensed under the MIT License
 
-### credits
+## credits
 passman is developed and maintained by saphingus, special thanks to anyone who has contributed or provided valuable feedback
