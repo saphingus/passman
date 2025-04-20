@@ -15,6 +15,8 @@ passman is an open-source, minimal password manager built with ruby, it uses aes
 ## showcase
 ![menu](showcasepassman1.png)
 
+![menu](showcasepassman2.png)
+
 
 ## installation
 
