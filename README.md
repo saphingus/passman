@@ -141,7 +141,7 @@ after launching the program, you will be prompted to enter your master password,
 passman is open-source, and contributions are welcome, please fork the repository, create a new branch, and submit a pull request
 
 ### license
-this project is licensed under the MIT License.
+this project is licensed under the MIT License
 
 ### credits
 passman is developed and maintained by saphingus, special thanks to anyone who has contributed or provided valuable feedback
