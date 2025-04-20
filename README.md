@@ -73,7 +73,7 @@ sudo dnf install ruby           # for fedora
 
 install dependencies:
 ```bash
-gem install openssl json base64 highline colorize
+gem install openssl json base64 highline colorize securerandom fileutils
 ```
 
 run passman:
