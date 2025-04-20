@@ -127,7 +127,7 @@ ruby passman.rb
 ```
 
 ### usage
-after launching the program, you will be prompted to enter your master password. once authenticated, you can use the following options:
+after launching the program, you will be prompted to enter your master password, once authenticated, you can use the following options:
 
 - add a new password
 
@@ -138,7 +138,7 @@ after launching the program, you will be prompted to enter your master password.
 - generate a random salt
 
 ### contributing
-passman is open-source, and contributions are welcome. please fork the repository, create a new branch, and submit a pull request
+passman is open-source, and contributions are welcome, please fork the repository, create a new branch, and submit a pull request
 
 ### license
 this project is licensed under the MIT License.
