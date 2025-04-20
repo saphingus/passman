@@ -56,7 +56,7 @@ launch the password manager:
 ruby passman.rb
 ```
 
-### platform support
+## platform support
 
 linux (including all distros)
 for linux distributions (including ubuntu, debian, arch, etc.), follow the steps below:
