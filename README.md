@@ -8,6 +8,7 @@ passman is an open-source, minimal password manager built with ruby, it uses aes
 - search for passwords by site
 - delete saved passwords
 - generate random salt for encryption
+- generate random passwords
 - aes-256-cbc encryption
 - local file storage (json format)
 
