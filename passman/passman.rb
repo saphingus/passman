@@ -6,12 +6,12 @@ require 'colorize'
 require 'securerandom'
 require 'fileutils'
 
-# ASCII header
+# new ascii header
 header = <<~HEADER
-  #{'[____   __    ___  ___  __  __    __    _  _]'.colorize(:light_cyan)}
-  #{'[  _ \\ /__\\  / __)/ __)(  \\/  )  /__\\  ( \\( )]'.colorize(:light_green)}
-  #{'[)___//(__)\\ \\__ \\\\__ \\\\ )    (  /(__)\\  )  ( ]'.colorize(:light_yellow)}
-  #{'[(__) (__)(__)(___/(___/(_/\\/\\_)(__)(__)(_)\_]'.colorize(:light_red)}
+  #{'88""Yb    db    .dP"Y8 .dP"Y8 8b    d8    db    88b 88'.colorize(:light_cyan)}
+  #{'88__dP   dPYb   `Ybo." `Ybo." 88b  d88   dPYb   88Yb88'.colorize(:light_green)}
+  #{'88"""   dP__Yb  o.`Y8b o.`Y8b 88YbdP88  dP__Yb  88 Y88'.colorize(:light_yellow)}
+  #{'88     dP""""Yb 8bodP\' 8bodP\' 88 YY 88 dP""""Yb 88  Y8'.colorize(:light_red)}
 HEADER
 
 puts header
@@ -70,9 +70,10 @@ def add_password(key)
   site = ask("[ * ] enter site: ")
   username = ask("[ * ] enter username: ")
   password = ask("[ * ] enter password: ") { |q| q.echo = "." }
+  category = ask("[ * ] enter category (e.g., social, bank, etc.): ")
   encrypted_password = encrypt(password, key)
   data = load_passwords
-  data << { site: site, username: username, encrypted_password: encrypted_password }
+  data << { site: site, username: username, encrypted_password: encrypted_password, category: category }
   save_passwords(data)
   puts "\n[ * ] password for #{site} saved".colorize(:light_green)
 end
@@ -90,6 +91,7 @@ def search_passwords(key)
         puts "\n[ * ] site: #{entry[:site]}"
         puts "[ * ] username: #{entry[:username]}"
         puts "[ * ] password: #{decrypted_password}"
+        puts "[ * ] category: #{entry[:category]}"
         puts "[------------------------------]"
       end
     end
@@ -119,7 +121,7 @@ def test_password_strength
   score += 1 if password =~ /[A-Z]/
   score += 1 if password =~ /[a-z]/
   score += 1 if password =~ /[0-9]/
-  score += 1 if password =~ /[\W_]/
+  score += 1 if password =~ /[\W_]/  # special characters
   score += 1 if password.length >= 12
 
   puts "\n[ * ] strength score: #{score}/5".colorize(:cyan)
@@ -175,50 +177,73 @@ def delete_password(key)
   end
 end
 
+# new dashboard display function
+def show_dashboard
+  data = load_passwords
+  total_passwords = data.length
+  categories = data.map { |entry| entry[:category] }.uniq
+  last_modified = File.mtime($passfile)
+
+  puts "\n[ * ] dashboard".colorize(:light_magenta)
+  puts "[========================================]".colorize(:light_magenta)
+  puts "[ * ] total passwords: #{total_passwords}".colorize(:cyan)
+  puts "[ * ] categories: #{categories.join(', ')}".colorize(:light_green)
+  puts "[ * ] last modified: #{last_modified}".colorize(:yellow)
+end
+
+# new advanced password analyzer
+def advanced_password_analyzer
+  password = ask("[ * ] enter password to analyze: ") { |q| q.echo = "." }
+  entropy = password.length * Math.log2(password.length)
+
+  puts "\n[ * ] analysis results for your password:".colorize(:light_blue)
+  puts "[ * ] password length: #{password.length}".colorize(:cyan)
+  puts "[ * ] password entropy: #{entropy.round(2)}".colorize(:yellow)
+
+  if entropy < 40
+    puts "[ * ] weak password entropy, try using a longer, more complex password".colorize(:light_red)
+  else
+    puts "[ * ] strong entropy, this password is more secure".colorize(:light_green)
+  end
+end
+
 def menu
   puts "\n[========================================]"
   puts "[password manager]".center(40).colorize(:light_magenta)
   puts "[========================================]"
-  puts "[ [1] ] add new password".colorize(:green)                # Green for adding
-  puts "[ [2] ] search for password".colorize(:cyan)              # Cyan for searching
-  puts "[ [3] ] generate random salt".colorize(:blue)             # Blue for salt generation
-  puts "[ [4] ] generate random password".colorize(:yellow)       # Yellow for generating a password
-  puts "[ [5] ] test password strength".colorize(:light_red)     # Light Red for testing strength
-  puts "[ [6] ] save backup of passwords".colorize(:light_green)  # Light Green for saving
-  puts "[ [7] ] restore backup of passwords".colorize(:light_blue) # Light Blue for restoring
-  puts "[ [8] ] show password tips".colorize(:light_magenta)     # Light Purple for tips
-  puts "[ [9] ] delete password".colorize(:red)                  # Red for deletion
-  puts "[ [10] ] exit".colorize(:magenta)                        # Magenta for exiting
-  print "\n[ * ] choose option: ".colorize(:white)
+  puts "[ [1] ] add new password".colorize(:green)
+  puts "[ [2] ] search for password".colorize(:cyan)
+  puts "[ [3] ] generate random salt".colorize(:blue)
+  puts "[ [4] ] generate random password".colorize(:yellow)
+  puts "[ [5] ] test password strength".colorize(:light_red)
+  puts "[ [6] ] save backup of passwords".colorize(:light_green)
+  puts "[ [7] ] restore backup of passwords".colorize(:light_blue)
+  puts "[ [8] ] show password tips".colorize(:light_magenta)
+  puts "[ [9] ] show dashboard".colorize(:green)
+  puts "[ [10] ] advanced password analyzer".colorize(:blue)
+  puts "[ [11] ] delete password".colorize(:red)
+  puts "[ [12] ] quit".colorize(:light_red)
 end
 
-at_exit { save_passwords(load_passwords) }
-
-def main
-  puts "\n[ * ] welcome to passman - password manager".colorize(:light_green)
-  puts "[========================================]"
-  key = verify_master_password
-
-  loop do
-    menu
-    choice = gets.chomp.to_i
-    case choice
-    when 1 then add_password(key)
-    when 2 then search_passwords(key)
-    when 3 then generate_salt
-    when 4 then generate_password
-    when 5 then test_password_strength
-    when 6 then save_backup
-    when 7 then restore_backup
-    when 8 then show_password_tips
-    when 9 then delete_password(key)
-    when 10
-      puts "\n[ * ] goodbye".colorize(:light_magenta)
-      break
-    else
-      puts "[ - ] error: invalid option".colorize(:light_yellow)
-    end
+# main execution
+master_key = verify_master_password
+loop do
+  menu
+  choice = ask("[ * ] select an option: ").to_i
+  case choice
+  when 1 then add_password(master_key)
+  when 2 then search_passwords(master_key)
+  when 3 then generate_salt
+  when 4 then generate_password
+  when 5 then test_password_strength
+  when 6 then save_backup
+  when 7 then restore_backup
+  when 8 then show_password_tips
+  when 9 then show_dashboard
+  when 10 then advanced_password_analyzer
+  when 11 then delete_password(master_key)
+  when 12 then exit
+  else
+    puts "[ - ] invalid choice, try again".colorize(:light_red)
   end
 end
-
-main
