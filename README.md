@@ -12,7 +12,7 @@ passman is an open-source, minimal password manager built with ruby, it uses aes
 - local file storage (json format)
 
 ## showcase
-![menu](images/menu.png)
+![menu]([http://url/to/img.png](https://github.com/saphingus/passman/blob/master/passman/showcasepassman1.png))
 
 
 ## installation
