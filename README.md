@@ -49,6 +49,7 @@ ruby passman.rb
 ```
 
 ### platform support
+
 linux (including all distros)
 for linux distributions (including ubuntu, debian, arch, etc.), follow the steps below:
 
@@ -70,6 +71,7 @@ ruby passman.rb
 ```
 
 ### macOS
+
 for macOS, follow these steps:
 
 install ruby using homebrew:
@@ -91,6 +93,7 @@ ruby passman.rb
 ```
 
 ### windows (native installation or wsl)
+
 native windows installation:
 download and install ruby from rubyinstaller.org.
 
