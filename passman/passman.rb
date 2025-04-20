@@ -179,16 +179,16 @@ def menu
   puts "\n[========================================]"
   puts "[password manager]".center(40).colorize(:light_magenta)
   puts "[========================================]"
-  puts "[ [1] ] add new password".colorize(:light_green)
-  puts "[ [2] ] search for password".colorize(:light_cyan)
-  puts "[ [3] ] generate random salt".colorize(:light_blue)
-  puts "[ [4] ] generate random password".colorize(:light_yellow)
-  puts "[ [5] ] test password strength".colorize(:yellow)
-  puts "[ [6] ] save backup of passwords".colorize(:cyan)
-  puts "[ [7] ] restore backup of passwords".colorize(:cyan)
-  puts "[ [8] ] show password tips".colorize(:light_blue)
-  puts "[ [9] ] delete password".colorize(:light_red)
-  puts "[ [10] ] exit".colorize(:light_magenta)
+  puts "[ [1] ] add new password".colorize(:green)                # Green for adding
+  puts "[ [2] ] search for password".colorize(:cyan)              # Cyan for searching
+  puts "[ [3] ] generate random salt".colorize(:blue)             # Blue for salt generation
+  puts "[ [4] ] generate random password".colorize(:yellow)       # Yellow for generating a password
+  puts "[ [5] ] test password strength".colorize(:light_red)     # Light Red for testing strength
+  puts "[ [6] ] save backup of passwords".colorize(:light_green)  # Light Green for saving
+  puts "[ [7] ] restore backup of passwords".colorize(:light_blue) # Light Blue for restoring
+  puts "[ [8] ] show password tips".colorize(:light_magenta)     # Light Purple for tips
+  puts "[ [9] ] delete password".colorize(:red)                  # Red for deletion
+  puts "[ [10] ] exit".colorize(:magenta)                        # Magenta for exiting
   print "\n[ * ] choose option: ".colorize(:white)
 end
 
