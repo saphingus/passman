@@ -3,24 +3,23 @@ require 'json'
 require 'base64'
 require 'highline/import'
 require 'colorize'
-require 'securerandom' # Added to generate random passwords
+require 'securerandom'
+require 'fileutils'
 
-# simple ascii header with colors
+# ASCII header
 header = <<~HEADER
   #{'[____   __    ___  ___  __  __    __    _  _]'.colorize(:light_cyan)}
   #{'[  _ \\ /__\\  / __)/ __)(  \\/  )  /__\\  ( \\( )]'.colorize(:light_green)}
-  #{'[)___//(__)\\ \\__ \\\__ \\ )    (  /(__)\\  )  ( ]'.colorize(:light_yellow)}
-  #{'[(__) (__)(__)(___/(___/(_/\\/\\_)(__)(__)(_)\_)]'.colorize(:light_red)}
+  #{'[)___//(__)\\ \\__ \\\\__ \\\\ )    (  /(__)\\  )  ( ]'.colorize(:light_yellow)}
+  #{'[(__) (__)(__)(___/(___/(_/\\/\\_)(__)(__)(_)\_]'.colorize(:light_red)}
 HEADER
 
-# output header before the rest of the program
 puts header
 
-# constants
-$passfile = 'passwords.json' # global variable for password file
+$passfile = 'passwords.json'
+$backupfile = 'passwords_backup.json'
 $algorithm = 'aes-256-cbc'
 
-# encrypt the text using the derived key
 def encrypt(text, key)
   cipher = OpenSSL::Cipher.new($algorithm).tap(&:encrypt)
   cipher.key = key
@@ -29,25 +28,21 @@ def encrypt(text, key)
   { iv: Base64.encode64(iv), data: Base64.encode64(encrypted_data) }
 end
 
-# decrypt the encrypted password
 def decrypt(enc_hash, key)
   decipher = OpenSSL::Cipher.new($algorithm).tap(&:decrypt)
   decipher.key = key
-  decipher.iv = Base64.decode64(enc_hash[:iv]) # decode iv properly
-  decrypted_data = decipher.update(Base64.decode64(enc_hash[:data])) + decipher.final # decode encrypted data and handle errors
-
+  decipher.iv = Base64.decode64(enc_hash[:iv])
+  decrypted_data = decipher.update(Base64.decode64(enc_hash[:data])) + decipher.final
   decrypted_data
-rescue OpenSSL::Cipher::CipherError => e
-  puts "\n[ - ] error: decryption failed".colorize(:light_red)
+rescue OpenSSL::Cipher::CipherError
+  puts "[ - ] error: decryption failed".colorize(:light_red)
   nil
 end
 
-# save the encrypted passwords to a file
 def save_passwords(data)
   File.write($passfile, JSON.pretty_generate(data))
 end
 
-# load passwords from the file
 def load_passwords
   return [] unless File.exist?($passfile)
   JSON.parse(File.read($passfile), symbolize_names: true)
@@ -56,35 +51,36 @@ rescue JSON::ParserError
   []
 end
 
-# get the master password (hidden input)
 def get_master_password
   master_password = ask("[ * ] enter master password: ") { |q| q.echo = "." }
-  return master_password unless master_password.empty?
-
-  puts "[ - ] error: master password cannot be empty".colorize(:light_red)
-  exit
+  if master_password.empty?
+    puts "[ - ] error: master password cannot be empty".colorize(:light_red)
+    exit
+  end
+  master_password
 end
 
-# add a new password entry
-def add_password(key)
-  site = ask("[ * ] enter site: ") 
-  username = ask("[ * ] enter username: ") 
-  password = ask("[ * ] enter password: ") { |q| q.echo = "." }
+def verify_master_password
+  master_password = get_master_password
+  key = OpenSSL::PKCS5.pbkdf2_hmac(master_password, "", 10000, 32, "sha256")
+  key
+end
 
+def add_password(key)
+  site = ask("[ * ] enter site: ")
+  username = ask("[ * ] enter username: ")
+  password = ask("[ * ] enter password: ") { |q| q.echo = "." }
   encrypted_password = encrypt(password, key)
   data = load_passwords
   data << { site: site, username: username, encrypted_password: encrypted_password }
   save_passwords(data)
-
   puts "\n[ * ] password for #{site} saved".colorize(:light_green)
 end
 
-# search for a password by site
 def search_passwords(key)
-  search_term = ask("[ * ] enter site to search: ") 
+  search_term = ask("[ * ] enter site to search: ")
   data = load_passwords
   results = data.select { |entry| entry[:site].include?(search_term) }
-
   if results.empty?
     puts "[ - ] no results found".colorize(:light_yellow)
   else
@@ -100,31 +96,76 @@ def search_passwords(key)
   end
 end
 
-# generate a random salt
 def generate_salt
-  salt = OpenSSL::Random.random_bytes(16) # 16-byte salt
+  salt = OpenSSL::Random.random_bytes(16)
   encoded_salt = Base64.encode64(salt)
   puts "\n[ * ] salt: #{encoded_salt}".colorize(:light_green)
   encoded_salt
 end
 
-# generate a random password
 def generate_password
   password_length = ask("[ * ] enter password length: ").to_i
   if password_length < 6
     puts "[ - ] error: password length must be at least 6 characters".colorize(:light_red)
     return
   end
-  password = SecureRandom.alphanumeric(password_length) # Generates a random password
+  password = SecureRandom.alphanumeric(password_length)
   puts "\n[ * ] generated password: #{password}".colorize(:light_green)
 end
 
-# delete a password entry
+def test_password_strength
+  password = ask("[ * ] enter password to test: ") { |q| q.echo = "." }
+  score = 0
+  score += 1 if password =~ /[A-Z]/
+  score += 1 if password =~ /[a-z]/
+  score += 1 if password =~ /[0-9]/
+  score += 1 if password =~ /[\W_]/
+  score += 1 if password.length >= 12
+
+  puts "\n[ * ] strength score: #{score}/5".colorize(:cyan)
+  case score
+  when 5 then puts "[ * ] password is very strong".colorize(:green)
+  when 4 then puts "[ * ] password is strong".colorize(:light_green)
+  when 3 then puts "[ * ] password is decent".colorize(:yellow)
+  when 2 then puts "[ * ] password is weak".colorize(:light_red)
+  else puts "[ * ] password is very weak".colorize(:red)
+  end
+end
+
+def save_backup
+  if File.exist?($passfile)
+    FileUtils.cp($passfile, $backupfile)
+    puts "\n[ * ] backup saved to #{$backupfile}".colorize(:cyan)
+  else
+    puts "[ - ] no password file to back up".colorize(:light_yellow)
+  end
+end
+
+def restore_backup
+  if File.exist?($backupfile)
+    FileUtils.cp($backupfile, $passfile)
+    puts "\n[ * ] passwords restored from backup".colorize(:cyan)
+  else
+    puts "[ - ] no backup file found".colorize(:light_yellow)
+  end
+end
+
+def show_password_tips
+  tips = [
+    "use at least 12 characters",
+    "mix upper and lowercase letters",
+    "include numbers and special characters",
+    "avoid using personal info like birthdays",
+    "use a password manager to generate and store complex passwords"
+  ]
+  puts "\n[ * ] password tips:".colorize(:light_blue)
+  tips.each { |tip| puts " - #{tip}".colorize(:white) }
+end
+
 def delete_password(key)
   site = ask("[ * ] enter site to delete: ")
   data = load_passwords
   entry_to_delete = data.find { |entry| entry[:site] == site }
-
   if entry_to_delete
     data.delete(entry_to_delete)
     save_passwords(data)
@@ -134,7 +175,6 @@ def delete_password(key)
   end
 end
 
-# simple menu with actions
 def menu
   puts "\n[========================================]"
   puts "[password manager]".center(40).colorize(:light_magenta)
@@ -143,37 +183,36 @@ def menu
   puts "[ [2] ] search for password".colorize(:light_cyan)
   puts "[ [3] ] generate random salt".colorize(:light_blue)
   puts "[ [4] ] generate random password".colorize(:light_yellow)
-  puts "[ [5] ] delete password".colorize(:light_red)
-  puts "[ [6] ] exit".colorize(:light_magenta)
+  puts "[ [5] ] test password strength".colorize(:yellow)
+  puts "[ [6] ] save backup of passwords".colorize(:cyan)
+  puts "[ [7] ] restore backup of passwords".colorize(:cyan)
+  puts "[ [8] ] show password tips".colorize(:light_blue)
+  puts "[ [9] ] delete password".colorize(:light_red)
+  puts "[ [10] ] exit".colorize(:light_magenta)
   print "\n[ * ] choose option: ".colorize(:white)
 end
 
-# ensure passwords are saved when the program exits
 at_exit { save_passwords(load_passwords) }
 
-# main program loop
 def main
   puts "\n[ * ] welcome to passman - password manager".colorize(:light_green)
   puts "[========================================]"
-  master_password = get_master_password
-  key = OpenSSL::PKCS5.pbkdf2_hmac(master_password, "", 10000, 32, "sha256")
+  key = verify_master_password
 
   loop do
     menu
     choice = gets.chomp.to_i
-
     case choice
-    when 1
-      add_password(key)
-    when 2
-      search_passwords(key)
-    when 3
-      generate_salt
-    when 4
-      generate_password
-    when 5
-      delete_password(key)
-    when 6
+    when 1 then add_password(key)
+    when 2 then search_passwords(key)
+    when 3 then generate_salt
+    when 4 then generate_password
+    when 5 then test_password_strength
+    when 6 then save_backup
+    when 7 then restore_backup
+    when 8 then show_password_tips
+    when 9 then delete_password(key)
+    when 10
       puts "\n[ * ] goodbye".colorize(:light_magenta)
       break
     else
