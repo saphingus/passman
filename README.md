@@ -1,7 +1,5 @@
 # passman
 
-**important:** do not use the ruby interpreter to run the password manager directly, instead run it using any terminal or command prompt, running with the ruby interpreter may break the code and prevent passwords from being detected correctly
-
 passman is an open-source, minimal password manager built with ruby, it uses aes-256-cbc encryption to securely store passwords and allows users to search, add, and delete passwords, the system relies on a master password and encryption keys to protect the stored data
 
 ## features
@@ -11,6 +9,10 @@ passman is an open-source, minimal password manager built with ruby, it uses aes
 - delete saved passwords
 - generate random salt for encryption
 - generate random passwords
+- backup saved passwords
+- restore passwords from a backup
+- password strenght test
+- password tips
 - aes-256-cbc encryption
 - local file storage (json format)
 
