@@ -19,9 +19,6 @@ passman is an open-source, minimal password manager built with ruby, it uses aes
 ## showcase
 ![menu](showcasepassman1.png)
 
-![menu](showcasepassman2.png)
-
-
 ## installation
 
 ### 1. install ruby
@@ -48,7 +45,7 @@ cd passman
 install required ruby gems:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 ### 4. run passman
@@ -73,7 +70,7 @@ sudo dnf install ruby           # for fedora
 
 install dependencies:
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -94,7 +91,7 @@ brew install ruby
 ### install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -110,7 +107,7 @@ download and install ruby from rubyinstaller.org
 install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -128,7 +125,7 @@ sudo apt-get install ruby
 install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils 
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
 ```
 
 run passman:
@@ -137,22 +134,11 @@ run passman:
 ruby passman.rb
 ```
 
-### usage
-after launching the program, you will be prompted to enter your master password, once authenticated, you can use the following options:
-
-- add a new password
-
-- search for a saved password
-
-- delete a password entry
-
-- generate a random salt
-
-### contributing
+## contributing
 passman is open-source, and contributions are welcome, please fork the repository, create a new branch, and submit a pull request
 
-### license
+## license
 this project is licensed under the MIT License
 
-### credits
+## credits
 passman is developed and maintained by saphingus, special thanks to anyone who has contributed or provided valuable feedback
