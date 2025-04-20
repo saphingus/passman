@@ -32,7 +32,7 @@ if ruby is not installed, follow the instructions below for each platform
 clone the passman repository from github:
 
 ```bash
-git clone https://github.com/yourusername/passman.git
+git clone https://github.com/saphingus/passman.git
 cd passman
 ```
 
