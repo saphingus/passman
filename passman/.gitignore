@@ -1,0 +1,36 @@
+# === RUBY RELATED ===
+*.gem
+*.rbc
+/.config
+/coverage/
+/pkg/
+/spec/reports/
+/test/tmp/
+/test/version_tmp/
+/tmp/
+
+# === ENVIRONMENT SECRETS ===
+.env
+.env.*
+
+# === LOGS ===
+*.log
+log/
+/*.log
+
+# === WINDOWS JUNK ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === GIT JUNK ===
+*.orig
+
+# === VSCODE ===
+.vscode/
+
+# === SYSTEM FILES ===
+.DS_Store
+*.swp
+*.swo
+
