@@ -6,10 +6,16 @@ require 'colorize'
 require 'securerandom'
 require 'fileutils'
 require 'zxcvbn'
+require 'tty-prompt'
+require 'tty-logger'
+
 
 $passfile = 'passwords.json'
 $backupfile = 'passwords_backup.json'
 $algorithm = 'aes-256-cbc'
+
+# initialize TTY Prompt
+prompt = TTY::Prompt.new
 
 def clear
   system("clear") || system("cls")
@@ -46,6 +52,9 @@ rescue JSON::ParserError
   []
 end
 
+# Initialize the logger
+logger = TTY::Logger.new
+
 def get_master_password
   master_password = ask("[ * ] enter master password: ") { |q| q.echo = "*" }
   if master_password.empty?
@@ -59,18 +68,6 @@ def verify_master_password
   master_password = get_master_password
   key = OpenSSL::PKCS5.pbkdf2_hmac(master_password, "", 10000, 32, "sha256")
   key
-end
-
-def add_password(key)
-  site = ask("[ * ] enter site: ")
-  username = ask("[ * ] enter username: ")
-  password = ask("[ * ] enter password: ") { |q| q.echo = "." }
-  category = ask("[ * ] enter category: ")
-  encrypted_password = encrypt(password, key)
-  data = load_passwords
-  data << { site: site, username: username, encrypted_password: encrypted_password, category: category }
-  save_passwords(data)
-  puts "\n[ * ] password for #{site} saved".colorize(:light_green)
 end
 
 def search_passwords(key)
@@ -206,7 +203,10 @@ def generate_random_filename
 end
 
 def restore_backup
-  backup_directory = "backups"
+  prompt = TTY::Prompt.new
+  backup_directory = "backups"  # Define your backup directory
+
+  # Get all backup files (e.g., *.bak.json)
   backup_files = Dir.glob(File.join(backup_directory, "*.bak.json"))
 
   if backup_files.empty?
@@ -214,17 +214,13 @@ def restore_backup
     return
   end
 
-  puts "[ * ]  available backups:"
-  backup_files.each_with_index do |file, index|
-    puts "[ #{index + 1} ] #{File.basename(file)}"
-  end
+  # Show list of backups using TTY::Prompt
+  choice = prompt.select("\n[available backups]".colorize(:light_white), backup_files.map { |file| File.basename(file) }, per_page: 5)
 
-  # Ask the user to select a backup file
-  choice = ask("[ * ] select a backup to restore (number): ").to_i
-  if choice > 0 && choice <= backup_files.length
-    selected_backup = backup_files[choice - 1]
+  # Check if the user made a valid choice and restore the backup
+  selected_backup = backup_files.find { |file| File.basename(file) == choice }
+  if selected_backup
     data = JSON.parse(File.read(selected_backup))
-
     # Here you would overwrite your existing data with the restored backup
     puts "[ * ] backup restored from #{selected_backup}".colorize(:light_green)
     # Perform actual restoration of data here
@@ -233,30 +229,26 @@ def restore_backup
   end
 end
 
-# submenu for backup and restore operations
-def backup_menu
-  clear
+# define the backup menu using TTY with scroll and arrow key navigation
+def backup_menu(prompt)
   loop do
-    puts "\n[backup & restore]".colorize(:white)
-    puts "[1] save backup of passwords".colorize(:light_green)
-    puts "[2] restore backup of passwords".colorize(:light_blue)
-    puts "[3] back to main menu".colorize(:light_yellow)
-    choice = ask("[ * ] select an option: ").to_i
+    choice = prompt.select("\n[backup & restore]".colorize(:light_white), [
+      'save backup of passwords'.colorize(:light_green),
+      'restore backup of passwords'.colorize(:light_blue),
+      'back to main menu'.colorize(:light_yellow)
+    ], per_page: 3)  # per_page limits how many items are visible at once, scrollable with arrows
 
     case choice
-    when 1 then save_backup   # Save a backup
-    when 2 then restore_backup  # Restore a backup
-    when 3 then break  # Go back to the main menu
-    else 
+    when 'save backup of passwords'.colorize(:light_green)
+      save_backup  # call the save backup method
+    when 'restore backup of passwords'.colorize(:light_blue)
+      restore_backup(prompt)  # call the restore backup method
+    when 'back to main menu'.colorize(:light_yellow)
+      break  # go back to the main menu
+    else
       puts "[ - ] invalid choice, try again".colorize(:light_red)
     end
   end
-end
-
-# Placeholder function for ask input
-def ask(prompt)
-  print prompt
-  gets.chomp
 end
 
 def show_password_tips
@@ -284,6 +276,19 @@ def delete_password(key)
   end
 end
 
+# Define add_password method
+def add_password(key)
+  site = ask("[ * ] enter site: ")
+  username = ask("[ * ] enter username: ")
+  password = ask("[ * ] enter password: ") { |q| q.echo = "." }
+  category = ask("[ * ] enter category: ")
+  encrypted_password = encrypt(password, key)
+  data = load_passwords
+  data << { site: site, username: username, encrypted_password: encrypted_password, category: category }
+  save_passwords(data)
+  puts "\n[ * ] password for #{site} saved".colorize(:light_green)
+end
+
 # new advanced password analyzer
 def advanced_password_analyzer
   password = ask("[ * ] enter password to analyze: ") { |q| q.echo = "." }
@@ -302,19 +307,21 @@ end
 
 # submenu: password operations
 def password_operations_menu(key)
+  prompt = TTY::Prompt.new  # Define prompt here
   clear
   loop do
-    puts "\n[password operations]".colorize(:white)
-    puts "[1] add new password".colorize(:light_green)
-    puts "[2] search for password".colorize(:light_cyan)
-    puts "[3] delete password".colorize(:light_red)
-    puts "[4] back to main menu".colorize(:light_yellow)
-    choice = ask("[ * ] select an option: ").to_i
+    choice = prompt.select("\n[password operations]".colorize(:white), [
+      'add new password'.colorize(:light_green),
+      'search for password'.colorize(:light_cyan),
+      'delete password'.colorize(:light_red),
+      'back to main menu'.colorize(:light_yellow)
+    ], per_page: 4)
+
     case choice
-    when 1 then add_password(key)
-    when 2 then search_passwords(key)
-    when 3 then delete_password(key)
-    when 4 then break
+    when 'add new password'.colorize(:light_green) then add_password(key)
+    when 'search for password'.colorize(:light_cyan) then search_passwords(key)
+    when 'delete password'.colorize(:light_red) then delete_password(key)
+    when 'back to main menu'.colorize(:light_yellow) then break
     else puts "[ - ] invalid choice, try again".colorize(:light_red)
     end
   end
@@ -322,19 +329,21 @@ end
 
 # submenu: tools & analysis
 def tools_menu
+  prompt = TTY::Prompt.new  # Define the prompt object
   clear
   loop do
-    puts "\n[tools & analysis]".colorize(:white)
-    puts "[1] generate random salt".colorize(:light_blue)
-    puts "[2] generate random password".colorize(:light_green)
-    puts "[3] advanced password analyzer".colorize(:light_cyan)
-    puts "[4] back to main menu".colorize(:light_yellow)
-    choice = ask("[ * ] select an option: ").to_i
+    choice = prompt.select("\n[tools & analysis]".colorize(:white), [
+      'generate random salt'.colorize(:light_blue),
+      'generate random password'.colorize(:light_green),
+      'advanced password analyzer'.colorize(:light_cyan),
+      'back to main menu'.colorize(:light_yellow)
+    ], per_page: 4)
+
     case choice
-    when 1 then generate_salt
-    when 2 then generate_password
-    when 3 then advanced_password_analyzer
-    when 4 then break
+    when 'generate random salt'.colorize(:light_blue) then generate_salt
+    when 'generate random password'.colorize(:light_green) then generate_password
+    when 'advanced password analyzer'.colorize(:light_cyan) then advanced_password_analyzer
+    when 'back to main menu'.colorize(:light_yellow) then break
     else puts "[ - ] invalid choice, try again".colorize(:light_red)
     end
   end
@@ -343,17 +352,24 @@ end
 # submenu: backup operations
 def backup_menu
   clear
+  prompt = TTY::Prompt.new
+  
   loop do
-    puts "\n[backup & restore]".colorize(:white)
-    puts "[1] save backup of passwords".colorize(:light_green)
-    puts "[2] restore backup of passwords".colorize(:light_blue)
-    puts "[3] back to main menu".colorize(:light_yellow)
-    choice = ask("[ * ] select an option: ").to_i
+    choice = prompt.select("\n[backup & restore]".colorize(:light_white), [
+      'save backup of passwords'.colorize(:light_green),
+      'restore backup of passwords'.colorize(:light_blue),
+      'back to main menu'.colorize(:light_yellow)
+    ], per_page: 3)  # per_page limits how many items are visible at once, scrollable with arrows
+
     case choice
-    when 1 then save_backup
-    when 2 then restore_backup
-    when 3 then break
-    else puts "[ - ] invalid choice, try again".colorize(:light_red)
+    when 'save backup of passwords'.colorize(:light_green)
+      save_backup  # call the save backup method
+    when 'restore backup of passwords'.colorize(:light_blue)
+      restore_backup  # call the restore backup method
+    when 'back to main menu'.colorize(:light_yellow)
+      break  # go back to the main menu
+    else
+      puts "[ - ] invalid choice, try again".colorize(:light_red)
     end
   end
 end
@@ -361,48 +377,64 @@ end
 # submenu: info/help
 def info_menu
   clear
+  prompt = TTY::Prompt.new
+
   loop do
-    puts "\n[info & help]".colorize(:white)
-    puts "[1] show password tips".colorize(:light_cyan)
-    puts "[2] show dashboard".colorize(:light_green)
-    puts "[3] back to main menu".colorize(:light_yellow)
-    choice = ask("[ * ] select an option: ").to_i
+    choice = prompt.select("\n[info & help]".colorize(:white), [
+      'show password tips'.colorize(:light_cyan),
+      'show dashboard'.colorize(:light_green),
+      'back to main menu'.colorize(:light_yellow)
+    ], per_page: 3)  # scrollable list, only 3 items visible at a time
+
     case choice
-    when 1 then show_password_tips
-    when 2 then show_dashboard
-    when 3 then break
-    else puts "[ - ] invalid choice, try again".colorize(:light_red)
+    when 'show password tips'.colorize(:light_cyan)
+      show_password_tips  # Call the method to show password tips
+    when 'show dashboard'.colorize(:light_green)
+      show_dashboard  # Call the method to show the dashboard
+    when 'back to main menu'.colorize(:light_yellow)
+      break  # Exit the loop and return to the main menu
+    else
+      puts "[ - ] invalid choice, try again".colorize(:light_red)
     end
   end
 end
 
 def main_menu
   clear
-# Displaying the ASCII art logo directly inside the main menu
-puts "#{'88""Yb    db    .dP"Y8 .dP"Y8 8b    d8    db    88b 88'.colorize(:light_cyan)}"
-puts "#{'88__dP   dPYb   `Ybo." `Ybo." 88b  d88   dPYb   88Yb88'.colorize(:light_green)}"
-puts "#{'88"""   dP__Yb  o.`Y8b o.`Y8b 88YbdP88  dP__Yb  88 Y88'.colorize(:light_yellow)}"
-puts "#{'88     dP""""Yb 8bodP\' 8bodP\' 88 YY 88 dP""""Yb 88  Y8'.colorize(:light_red)}"
-
-puts "[========================================]"
-puts "[1] password operations".colorize(:light_green)
-puts "[2] tools & analysis".colorize(:light_cyan)
-puts "[3] backup & restore".colorize(:light_yellow)
-puts "[4] info & help".colorize(:light_blue)
-puts "[5] quit".colorize(:light_red)
+  # Display the ASCII art logo as part of the main menu
+  puts "#{'88""Yb    db    .dP"Y8 .dP"Y8 8b    d8    db    88b 88'.colorize(:light_cyan)}"
+  puts "#{'88__dP   dPYb   `Ybo." `Ybo." 88b  d88   dPYb   88Yb88'.colorize(:light_green)}"
+  puts "#{'88"""   dP__Yb  o.`Y8b o.`Y8b 88YbdP88  dP__Yb  88 Y88'.colorize(:light_yellow)}"
+  puts "#{'88     dP""""Yb 8bodP\' 8bodP\' 88 YY 88 dP""""Yb 88  Y8'.colorize(:light_red)}"
+  puts "[========================================]"
+  
+  prompt = TTY::Prompt.new
+  choice = prompt.select("", [
+    'password operations'.colorize(:light_green),
+    'tools & analysis'.colorize(:light_cyan),
+    'backup & restore'.colorize(:light_yellow),
+    'info & help'.colorize(:light_blue),
+    'quit'.colorize(:light_red)
+  ], per_page: 5)
+  
+  return choice
 end
 
 # main execution
 master_key = verify_master_password
 loop do
-  main_menu
-  choice = ask("[ * ] select a category: ").to_i
+  choice = main_menu
+  
   case choice
-  when 1 then password_operations_menu(master_key)
-  when 2 then tools_menu
-  when 3 then backup_menu
-  when 4 then info_menu
-  when 5
+  when 'password operations'.colorize(:light_green)
+    password_operations_menu(master_key)
+  when 'tools & analysis'.colorize(:light_cyan)
+    tools_menu
+  when 'backup & restore'.colorize(:light_yellow)
+    backup_menu
+  when 'info & help'.colorize(:light_blue)
+    info_menu
+  when 'quit'.colorize(:light_red)
     puts "\n[ * ] goodbye!".colorize(:light_red)
     clear  # clear the screen first
     exit   # then exit the program

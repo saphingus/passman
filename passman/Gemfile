@@ -17,3 +17,19 @@ gem "pry"
 gem "highline"
 
 gem 'zxcvbn-ruby', require: 'zxcvbn'
+
+gem 'tty-prompt'
+
+gem 'tty-logger'
+
+gem 'tty-screen' 
+
+gem 'tty-table'    
+
+gem 'tty-box'  
+
+gem 'tty-cursor'  
+
+gem 'tty-command'  
+
+gem 'tty-reader'    
