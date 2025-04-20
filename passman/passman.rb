@@ -7,7 +7,6 @@ require 'securerandom'
 require 'fileutils'
 require 'zxcvbn'
 require 'tty-prompt'
-require 'tty-logger'
 
 
 $passfile = 'passwords.json'
