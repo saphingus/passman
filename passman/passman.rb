@@ -5,20 +5,15 @@ require 'highline/import'
 require 'colorize'
 require 'securerandom'
 require 'fileutils'
-
-# new ascii header
-header = <<~HEADER
-  #{'88""Yb    db    .dP"Y8 .dP"Y8 8b    d8    db    88b 88'.colorize(:light_cyan)}
-  #{'88__dP   dPYb   `Ybo." `Ybo." 88b  d88   dPYb   88Yb88'.colorize(:light_green)}
-  #{'88"""   dP__Yb  o.`Y8b o.`Y8b 88YbdP88  dP__Yb  88 Y88'.colorize(:light_yellow)}
-  #{'88     dP""""Yb 8bodP\' 8bodP\' 88 YY 88 dP""""Yb 88  Y8'.colorize(:light_red)}
-HEADER
-
-puts header
+require 'zxcvbn'
 
 $passfile = 'passwords.json'
 $backupfile = 'passwords_backup.json'
 $algorithm = 'aes-256-cbc'
+
+def clear
+  system("clear") || system("cls")
+end
 
 def encrypt(text, key)
   cipher = OpenSSL::Cipher.new($algorithm).tap(&:encrypt)
@@ -52,7 +47,7 @@ rescue JSON::ParserError
 end
 
 def get_master_password
-  master_password = ask("[ * ] enter master password: ") { |q| q.echo = "." }
+  master_password = ask("[ * ] enter master password: ") { |q| q.echo = "*" }
   if master_password.empty?
     puts "[ - ] error: master password cannot be empty".colorize(:light_red)
     exit
@@ -115,64 +110,84 @@ def show_dashboard
   # Affichage minimaliste
   puts "\n[ * ] dashboard"
   puts "[========================================]".colorize(:white)
-  puts "[ * ] program version: #{program_version}"
-  puts "[ * ] total passwords: #{total_passwords}"
-  puts "[ * ] file zize: #{file_size} bytes"
-  puts "[ * ] encryption status: #{encryption_status}"
+  puts "[ * ] program version: #{program_version}".colorize(:light_green)
+  puts "[ * ] total passwords: #{total_passwords}".colorize(:light_blue)
+  puts "[ * ] file zize: #{file_size} bytes".colorize(:light_cyan)
+  puts "[ * ] encryption status: #{encryption_status}".colorize(:light_red)
   puts "[========================================]".colorize(:white)
 end
 
-# Placeholder pour vérifier l'encryption
 def check_encryption
-  # Exemple d'activation d'encryption
   encryption_enabled = true
   encryption_enabled ? "encrypted" : "not encrypted"
 end
 
 def generate_password
+  # ask for the desired password length
   password_length = ask("[ * ] enter password length: ").to_i
+
   if password_length < 6
     puts "[ - ] error: password length must be at least 6 characters".colorize(:light_red)
     return
   end
-  password = SecureRandom.alphanumeric(password_length)
+
+  password = SecureRandom.base64(password_length)
+
+  strength_report = check_password_strength(password)
+
   puts "\n[ * ] generated password: #{password}".colorize(:light_green)
-end
+  puts "[ * ] password strength: #{strength_report[:strength_level]}"
+  puts "[ * ] score: #{strength_report[:score].to_s.colorize(:light_yellow)}/4"
 
-def test_password_strength
-  password = ask("[ * ] enter password to test: ") { |q| q.echo = "." }
-  score = 0
-  score += 1 if password =~ /[A-Z]/
-  score += 1 if password =~ /[a-z]/
-  score += 1 if password =~ /[0-9]/
-  score += 1 if password =~ /[\W_]/  # special characters
-  score += 1 if password.length >= 12
+  suggestions = Array(strength_report[:feedback]).compact
 
-  puts "\n[ * ] strength score: #{score}/5".colorize(:cyan)
-  case score
-  when 5 then puts "[ * ] password is very strong".colorize(:green)
-  when 4 then puts "[ * ] password is strong".colorize(:light_green)
-  when 3 then puts "[ * ] password is decent".colorize(:yellow)
-  when 2 then puts "[ * ] password is weak".colorize(:light_red)
-  else puts "[ * ] password is very weak".colorize(:red)
+  case strength_report[:score]
+  when 3, 4
+    puts "[ - ] suggestions not found, password is strong enough".colorize(:light_red)
+  else
+    unless suggestions.empty?
+      puts "[ * ] suggestions: consider generating a more complex password #{suggestions.join(', ').colorize(:light_magenta)}"
+    else
+      puts "[ - ] no suggestions available".colorize(:light_red)
+    end
   end
 end
 
+def check_password_strength(password)
+  result = Zxcvbn.test(password)
+
+  # get password strength level
+  strength_level = case result[:score]
+                   when 0 then 'very weak'.colorize(:light_red)
+                   when 1 then 'weak'.colorize(:light_yellow)
+                   when 2 then 'fair'.colorize(:light_cyan)
+                   when 3 then 'strong'.colorize(:light_green)
+                   when 4 then 'very strong'.colorize(:light_blue)
+                   else 'unknown'.colorize(:light_white)
+                   end
+
+  {
+    score: result[:score],
+    strength_level: strength_level,
+    feedback: result[:feedback][:suggestions]
+  }
+end
+
 def save_backup
-  # Ensure the backup directory exists
+  # ensure the backup directory exists
   backup_directory = "backups"
   FileUtils.mkdir_p(backup_directory) unless Dir.exist?(backup_directory)
   
-  # Generate a random backup filename
+  # generate a random backup filename
   backup_filename = generate_random_filename
 
-  # Create the backup file path
+  # create the backup file path
   backup_file_path = File.join(backup_directory, "#{backup_filename}.bak.json")
   
-  # Assuming 'data' holds the passwords and other sensitive info to backup
+  # assuming 'data' holds the passwords and other sensitive info to backup
   data = load_passwords
 
-  # Save the backup in JSON format
+  # save the backup in JSON format
   File.open(backup_file_path, 'w') do |file|
     file.write(JSON.pretty_generate(data))  # Converts the data to a pretty-printed JSON format
   end
@@ -218,13 +233,14 @@ def restore_backup
   end
 end
 
-# Submenu for backup and restore operations
+# submenu for backup and restore operations
 def backup_menu
+  clear
   loop do
-    puts "\n[backup & restore]".colorize(:light_magenta)
-    puts "[ [1] ] save backup of passwords".colorize(:light_green)
-    puts "[ [2] ] restore backup of passwords".colorize(:light_blue)
-    puts "[ [3] ] back to main menu".colorize(:light_yellow)
+    puts "\n[backup & restore]".colorize(:white)
+    puts "[1] save backup of passwords".colorize(:light_green)
+    puts "[2] restore backup of passwords".colorize(:light_blue)
+    puts "[3] back to main menu".colorize(:light_yellow)
     choice = ask("[ * ] select an option: ").to_i
 
     case choice
@@ -274,8 +290,8 @@ def advanced_password_analyzer
   entropy = password.length * Math.log2(password.length)
 
   puts "\n[ * ] analysis results for your password:".colorize(:light_blue)
-  puts "[ * ] password length: #{password.length}".colorize(:cyan)
-  puts "[ * ] password entropy: #{entropy.round(2)}".colorize(:yellow)
+  puts "[ * ] password length: #{password.length}".colorize(:light_cyan)
+  puts "[ * ] password entropy: #{entropy.round(2)}".colorize(:light_yellow)
 
   if entropy < 40
     puts "[ * ] weak password entropy, try using a longer, more complex password".colorize(:light_red)
@@ -286,12 +302,13 @@ end
 
 # submenu: password operations
 def password_operations_menu(key)
+  clear
   loop do
-    puts "\n[password operations]".colorize(:light_magenta)
-    puts "[ [1] ] add new password".colorize(:green)
-    puts "[ [2] ] search for password".colorize(:cyan)
-    puts "[ [3] ] delete password".colorize(:red)
-    puts "[ [4] ] back to main menu".colorize(:light_yellow)
+    puts "\n[password operations]".colorize(:white)
+    puts "[1] add new password".colorize(:light_green)
+    puts "[2] search for password".colorize(:light_cyan)
+    puts "[3] delete password".colorize(:light_red)
+    puts "[4] back to main menu".colorize(:light_yellow)
     choice = ask("[ * ] select an option: ").to_i
     case choice
     when 1 then add_password(key)
@@ -305,20 +322,19 @@ end
 
 # submenu: tools & analysis
 def tools_menu
+  clear
   loop do
-    puts "\n[tools & analysis]".colorize(:light_magenta)
-    puts "[ [1] ] generate random salt".colorize(:blue)
-    puts "[ [2] ] generate random password".colorize(:yellow)
-    puts "[ [3] ] test password strength".colorize(:light_red)
-    puts "[ [4] ] advanced password analyzer".colorize(:light_cyan)
-    puts "[ [5] ] back to main menu".colorize(:light_yellow)
+    puts "\n[tools & analysis]".colorize(:white)
+    puts "[1] generate random salt".colorize(:light_blue)
+    puts "[2] generate random password".colorize(:light_green)
+    puts "[3] advanced password analyzer".colorize(:light_cyan)
+    puts "[4] back to main menu".colorize(:light_yellow)
     choice = ask("[ * ] select an option: ").to_i
     case choice
     when 1 then generate_salt
     when 2 then generate_password
-    when 3 then test_password_strength
-    when 4 then advanced_password_analyzer
-    when 5 then break
+    when 3 then advanced_password_analyzer
+    when 4 then break
     else puts "[ - ] invalid choice, try again".colorize(:light_red)
     end
   end
@@ -326,11 +342,12 @@ end
 
 # submenu: backup operations
 def backup_menu
+  clear
   loop do
-    puts "\n[backup & restore]".colorize(:light_magenta)
-    puts "[ [1] ] save backup of passwords".colorize(:light_green)
-    puts "[ [2] ] restore backup of passwords".colorize(:light_blue)
-    puts "[ [3] ] back to main menu".colorize(:light_yellow)
+    puts "\n[backup & restore]".colorize(:white)
+    puts "[1] save backup of passwords".colorize(:light_green)
+    puts "[2] restore backup of passwords".colorize(:light_blue)
+    puts "[3] back to main menu".colorize(:light_yellow)
     choice = ask("[ * ] select an option: ").to_i
     case choice
     when 1 then save_backup
@@ -343,11 +360,12 @@ end
 
 # submenu: info/help
 def info_menu
+  clear
   loop do
-    puts "\n[info & help]".colorize(:light_magenta)
-    puts "[ [1] ] show password tips".colorize(:light_cyan)
-    puts "[ [2] ] show dashboard".colorize(:green)
-    puts "[ [3] ] back to main menu".colorize(:light_yellow)
+    puts "\n[info & help]".colorize(:white)
+    puts "[1] show password tips".colorize(:light_cyan)
+    puts "[2] show dashboard".colorize(:light_green)
+    puts "[3] back to main menu".colorize(:light_yellow)
     choice = ask("[ * ] select an option: ").to_i
     case choice
     when 1 then show_password_tips
@@ -358,16 +376,20 @@ def info_menu
   end
 end
 
-# new main menu
 def main_menu
-  puts "\n[========================================]"
-  puts "[password manager]".center(40).colorize(:light_magenta)
-  puts "[========================================]"
-  puts "[ [1] ] password operations".colorize(:green)
-  puts "[ [2] ] tools & analysis".colorize(:cyan)
-  puts "[ [3] ] backup & restore".colorize(:yellow)
-  puts "[ [4] ] info & help".colorize(:blue)
-  puts "[ [5] ] quit".colorize(:light_red)
+  clear
+# Displaying the ASCII art logo directly inside the main menu
+puts "#{'88""Yb    db    .dP"Y8 .dP"Y8 8b    d8    db    88b 88'.colorize(:light_cyan)}"
+puts "#{'88__dP   dPYb   `Ybo." `Ybo." 88b  d88   dPYb   88Yb88'.colorize(:light_green)}"
+puts "#{'88"""   dP__Yb  o.`Y8b o.`Y8b 88YbdP88  dP__Yb  88 Y88'.colorize(:light_yellow)}"
+puts "#{'88     dP""""Yb 8bodP\' 8bodP\' 88 YY 88 dP""""Yb 88  Y8'.colorize(:light_red)}"
+
+puts "[========================================]"
+puts "[1] password operations".colorize(:light_green)
+puts "[2] tools & analysis".colorize(:light_cyan)
+puts "[3] backup & restore".colorize(:light_yellow)
+puts "[4] info & help".colorize(:light_blue)
+puts "[5] quit".colorize(:light_red)
 end
 
 # main execution
@@ -382,9 +404,9 @@ loop do
   when 4 then info_menu
   when 5
     puts "\n[ * ] goodbye!".colorize(:light_red)
-    exit
+    clear  # clear the screen first
+    exit   # then exit the program
   else
     puts "[ - ] invalid choice, try again".colorize(:light_red)
   end
 end
-
