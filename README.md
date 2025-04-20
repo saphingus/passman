@@ -1,6 +1,6 @@
 # passman
 
-passman is an open-source, minimal password manager built with ruby. it uses aes-256-cbc encryption to securely store passwords and allows users to search, add, and delete passwords. the system relies on a master password and encryption keys to protect the stored data.
+passman is an open-source, minimal password manager built with ruby, it uses aes-256-cbc encryption to securely store passwords and allows users to search, add, and delete passwords, the system relies on a master password and encryption keys to protect the stored data
 
 ## features
 
@@ -21,7 +21,7 @@ ensure ruby is installed on your system. you can verify it by running:
 ruby --version
 ```
 
-if ruby is not installed, follow the instructions below for each platform.
+if ruby is not installed, follow the instructions below for each platform
 
 ### 2. clone the repository
 
