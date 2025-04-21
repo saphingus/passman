@@ -45,7 +45,7 @@ cd passman
 install required ruby gems:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn tty-prompt
 ```
 
 ### 4. run passman
@@ -70,7 +70,7 @@ sudo dnf install ruby           # for fedora
 
 install dependencies:
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn tty-prompt
 ```
 
 run passman:
@@ -91,7 +91,7 @@ brew install ruby
 ### install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn tty-prompt
 ```
 
 run passman:
@@ -107,7 +107,7 @@ download and install ruby from rubyinstaller.org
 install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn tty-prompt
 ```
 
 run passman:
@@ -125,7 +125,7 @@ sudo apt-get install ruby
 install dependencies:
 
 ```bash
-gem install openssl json base64 highline colorize securerandom fileutils zxcvbn
+gem install openssl json base64 highline colorize securerandom fileutils zxcvbn tty-prompt
 ```
 
 run passman:
